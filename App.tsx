@@ -27,9 +27,11 @@ const App: React.FC = () => {
   const [showTeacherForm, setShowTeacherForm] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [showCourseForm, setShowCourseForm] = useState(false);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [enrollCourseId, setEnrollCourseId] = useState<string | null>(null);
   const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null);
   const [gradingCourse, setGradingCourse] = useState<Course | null>(null);
+  const [deletingCourseId, setDeletingCourseId] = useState<string | null>(null);
   
   const [aiAnalysis, setAiAnalysis] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -101,10 +103,19 @@ const App: React.FC = () => {
     }
   };
 
-  const handleAddCourse = (newCourse: Course) => {
-    SchoolDatabase.saveCourse(newCourse);
+  const handleSaveCourse = (course: Course) => {
+    SchoolDatabase.saveCourse(course);
     refreshData();
     setShowCourseForm(false);
+    setEditingCourse(null);
+  };
+
+  const handleDeleteCourse = () => {
+    if (deletingCourseId) {
+      SchoolDatabase.deleteCourse(deletingCourseId);
+      refreshData();
+      setDeletingCourseId(null);
+    }
   };
 
   const handleEnrollStudent = (courseId: string, studentId: string) => {
@@ -146,8 +157,8 @@ const App: React.FC = () => {
     setShowTeacherForm(true);
   };
 
-  const handleLogout = () => {
-    if (window.confirm('Delete current session and logout as Super Admin?')) {
+  const handleSignOut = () => {
+    if (window.confirm('Are you sure you want to sign out? This will end your current Super Admin session.')) {
        window.location.reload();
     }
   }
@@ -234,7 +245,7 @@ const App: React.FC = () => {
                 <p className="text-slate-500">Curriculum schedule and credit management.</p>
               </div>
               <button 
-                onClick={() => setShowCourseForm(true)}
+                onClick={() => { setEditingCourse(null); setShowCourseForm(true); }}
                 className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-100 flex items-center gap-2"
               >
                 <span>+ Create Course</span>
@@ -268,7 +279,7 @@ const App: React.FC = () => {
                         
                         <div className="flex-1 max-w-[200px]">
                           <div className="flex justify-between items-end mb-1">
-                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Capacity</p>
+                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Class Capacity</p>
                              <p className={`text-xs font-bold ${isFull ? 'text-rose-600' : 'text-slate-700'}`}>
                                {courseEnrollments.length} / {c.capacity}
                              </p>
@@ -308,6 +319,26 @@ const App: React.FC = () => {
                         >
                           {isExpanded ? 'Hide Students' : 'View Students'}
                         </button>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => { setEditingCourse(c); setShowCourseForm(true); }}
+                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                            title="Edit Course"
+                          >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                          </button>
+                          <button 
+                            onClick={() => setDeletingCourseId(c.id)}
+                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                            title="Delete Course"
+                          >
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -375,7 +406,7 @@ const App: React.FC = () => {
             <span className="text-sm font-bold text-slate-700 capitalize tracking-tight">{currentRoute.replace('-', ' ')}</span>
           </div>
           <div className="flex items-center gap-6">
-            <div className="flex items-center gap-4 border-l border-slate-100 pl-6 group relative">
+            <div className="flex items-center gap-5 border-l border-slate-100 pl-6">
               <div className="text-right hidden sm:block">
                 <p className="text-xs font-black text-slate-900">Admin User</p>
                 <div className="flex items-center justify-end gap-1.5">
@@ -383,19 +414,18 @@ const App: React.FC = () => {
                    <p className="text-[10px] text-blue-600 font-black uppercase tracking-widest">Super Admin</p>
                 </div>
               </div>
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-slate-800 to-slate-900 shadow-lg flex items-center justify-center text-white font-bold border border-slate-700">
-                AU
-              </div>
-              {/* Administrative Quick Actions Dropdown Overlay */}
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-slate-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0 z-50 p-2">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-slate-900 flex items-center justify-center text-white font-bold text-xs border border-slate-800 shadow-sm">
+                  AU
+                </div>
                 <button 
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-rose-600 hover:bg-rose-50 rounded-xl transition-colors text-sm font-bold"
+                  onClick={handleSignOut}
+                  className="px-4 py-2 bg-rose-50 text-rose-600 rounded-xl font-bold text-xs border border-rose-100 hover:bg-rose-100 hover:text-rose-700 transition-all flex items-center gap-2 group"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  <svg className="w-3.5 h-3.5 group-hover:rotate-12 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
-                  Delete Session
+                  Sign out
                 </button>
               </div>
             </div>
@@ -417,8 +447,40 @@ const App: React.FC = () => {
 
       {showAdmission && <AdmissionForm onClose={() => setShowAdmission(false)} onSave={handleAddStudent} />}
       {showTeacherForm && <TeacherForm onClose={() => { setShowTeacherForm(false); setEditingTeacher(null); }} onSave={handleSaveTeacher} initialData={editingTeacher} />}
-      {showCourseForm && <CourseForm onClose={() => setShowCourseForm(false)} onSave={handleAddCourse} teachers={teachers.map(t => t.name)} />}
+      {showCourseForm && <CourseForm onClose={() => { setShowCourseForm(false); setEditingCourse(null); }} onSave={handleSaveCourse} teachers={teachers.map(t => t.name)} initialData={editingCourse} />}
       
+      {deletingCourseId && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
+          <div className="bg-white rounded-[2rem] w-full max-w-md overflow-hidden shadow-2xl animate-scaleIn">
+            <div className="p-8 text-center">
+              <div className="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-slate-800 mb-2">Delete Course?</h3>
+              <p className="text-slate-500 mb-8">
+                Are you sure you want to remove <span className="font-bold text-slate-800">{courses.find(c => c.id === deletingCourseId)?.title}</span>? All student enrollments for this course will be permanently cleared.
+              </p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setDeletingCourseId(null)}
+                  className="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-all"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={handleDeleteCourse}
+                  className="flex-1 py-3 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 shadow-lg shadow-rose-200 transition-all"
+                >
+                  Confirm Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {enrollCourseId && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-4">
           <div className="bg-white rounded-[2rem] w-full max-w-lg overflow-hidden shadow-2xl animate-scaleIn">

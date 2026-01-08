@@ -72,6 +72,17 @@ export class SchoolDatabase {
     localStorage.setItem(DB_KEYS.COURSES, JSON.stringify(courses));
   }
 
+  static deleteCourse(id: string) {
+    const courses = this.getCourses();
+    const filtered = courses.filter(c => c.id !== id);
+    localStorage.setItem(DB_KEYS.COURSES, JSON.stringify(filtered));
+    
+    // Cascading delete: Remove all enrollments for this course
+    const enrollments = this.getEnrollments();
+    const filteredEnrollments = enrollments.filter(e => e.courseId !== id);
+    localStorage.setItem(DB_KEYS.ENROLLMENTS, JSON.stringify(filteredEnrollments));
+  }
+
   static getEnrollments(): CourseEnrollment[] {
     this.init();
     return JSON.parse(localStorage.getItem(DB_KEYS.ENROLLMENTS) || '[]');
