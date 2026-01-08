@@ -1,0 +1,7 @@
+{
+  "name": "EduPulse - Advanced School Management System",
+  "description": "A comprehensive school management platform featuring student/teacher administration, academic tracking, and Gemini-powered AI insights for educational excellence.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
